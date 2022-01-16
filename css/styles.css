@@ -1,0 +1,48 @@
+:root {
+  --rsg-separator-size: 5px;
+}
+
+.rsg-resizable-grid {
+  position: relative;
+}
+
+/* Both separators */
+.rsg-separator {
+  position: absolute;
+}
+.rsg-separator::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  background-color: cornflowerblue;
+}
+.rsg-separator.dragging::before,
+.rsg-separator:hover::before {
+  opacity: 1;
+}
+
+/* Row separator */
+.rsg-separator.row {
+  cursor: ns-resize;
+  height: var(--rsg-separator-size);
+}
+.rsg-separator.row::before {
+  top: calc(var(--rsg-separator-size) / -2 + 0.5px)
+}
+body.rsg-row-resizing {
+  cursor: ns-resize;
+}
+
+/* Column separator */
+.rsg-separator.col {
+  cursor: ew-resize;
+  width: var(--rsg-separator-size);
+}
+.rsg-separator.col::before {
+  right: calc(var(--rsg-separator-size) / 2 - 0.5px)
+}
+body.rsg-col-resizing {
+  cursor: ew-resize;
+}
