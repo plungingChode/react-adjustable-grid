@@ -8,7 +8,15 @@ import {
 } from './ResizableGridSeparators';
 
 import clsx from 'clsx';
-import { createKeyMatrix, getLayoutFromChildren, KeyMatrix, measureCells, noop, sum, transposeKeyMatrix } from './util';
+import { 
+  createCellMatrix, 
+  getLayoutFromChildren, 
+  KeyMatrix, 
+  measureCells, 
+  noop, 
+  sum, 
+  transposeKeyMatrix, 
+} from './util';
 
 export type TKey = string;
 export type GridCell = {
@@ -60,14 +68,14 @@ type Props = {
 
 type State = {
   cols: number[],
-  areaMatrix: KeyMatrix,
+  keyMatrix: KeyMatrix,
   rows: number[],
   measuredCells: Record<TKey, MeasuredCell>,
   layout: Layout,
 
   bounds: number,
   externalUpdate: boolean,
-  
+
   // Used to compare with incoming props
   children: ReactElement<any>[],
   propsRows: number[],
@@ -92,7 +100,7 @@ class ResizableGrid extends React.Component<Props, State> {
 
   state: State = {
     measuredCells: {},
-    areaMatrix: [],
+    keyMatrix: [],
     rows: [...this.props.rows],
     cols: [...this.props.cols],
     layout: getLayoutFromChildren(
@@ -111,17 +119,21 @@ class ResizableGrid extends React.Component<Props, State> {
     super(props);
     this.state = {
       ...this.state,
-      areaMatrix: this.createCellMatrix(),
-      measuredCells: measureCells(
-        this.state.layout,
+      keyMatrix: createCellMatrix(
         this.state.rows,
         this.state.cols,
+        this.state.layout
+      ),
+      measuredCells: measureCells(
+        this.state.rows,
+        this.state.cols,
+        this.state.layout,
       ),
     };
   }
 
   calculateResizeBoundary = (kind: 'row' | 'col', target: number, handleOffset: number) => {
-    const { areaMatrix, cols, rows, measuredCells } = this.state;
+    const { keyMatrix: areaMatrix, cols, rows, measuredCells } = this.state;
 
     let matrix: KeyMatrix;
     let sizes: number[];
@@ -176,32 +188,9 @@ class ResizableGrid extends React.Component<Props, State> {
     return boundary;
   };
 
-  // TODO handle adding/removing layout elements, and fill cells
-  // with fake elements
-  createCellMatrix = () => {
-    const { rows: rowSizes, cols: columnSizes } = this.props;
-    const { layout } = this.state;
-
-    const n = rowSizes.length;
-    const m = columnSizes.length;
-    const matrix = createKeyMatrix(n, m);
-
-    // Mark area locations with department ID
-    for (const cell of layout) {
-      const rowMax = Math.min(cell.y + cell.h - 1, n);
-      const colMax = Math.min(cell.x + cell.w - 1, m);
-
-      for (let y = cell.y - 1; y < rowMax; y++) {
-        for (let x = cell.x - 1; x < colMax; x++) {
-          matrix[y][x] = String(cell.i);
-        }
-      }
-    }
-    return matrix;
-  };
-
   onBeforeColResize: ResizeEventHandler = (idx, offset) => {
     this.setState({ bounds: this.calculateResizeBoundary('col', idx, offset) });
+    this.props.onBeforeColumnResize!(idx, this.state.cols[idx]);
   };
 
   onColResize: ResizeEventHandler = (idx, delta) => {
@@ -223,9 +212,9 @@ class ResizableGrid extends React.Component<Props, State> {
     // console.log(sum(newCols.slice(0, idx + 1)), '>=', this.state.bounds);
 
     const measuredCells = measureCells(
-      this.state.layout, 
-      this.state.rows, 
-      newCols
+      this.state.rows,
+      newCols,
+      this.state.layout,
     );
     this.setState({ cols: newCols, measuredCells, externalUpdate: false });
   };
@@ -237,6 +226,7 @@ class ResizableGrid extends React.Component<Props, State> {
 
   onBeforeRowResize: ResizeEventHandler = (idx, offset) => {
     this.setState({ bounds: this.calculateResizeBoundary('row', idx, offset) });
+    this.props.onBeforeRowResize!(idx, this.state.rows[idx]);
   };
 
   onRowResize: ResizeEventHandler = (idx, delta) => {
@@ -250,9 +240,9 @@ class ResizableGrid extends React.Component<Props, State> {
     rows[idx] += delta;
 
     const measuredCells = measureCells(
-      this.state.layout, 
       rows,
-      this.state.cols
+      this.state.cols,
+      this.state.layout,
     );
     this.setState({ rows, measuredCells, externalUpdate: false });
   };
@@ -272,27 +262,24 @@ class ResizableGrid extends React.Component<Props, State> {
       return null;
     }
 
-    return (
-      <div
-        key={child.key}
-        style={{
-          position: 'absolute',
-          top: childCell.y,
-          left: childCell.x,
-          width: childCell.w,
-          height: childCell.h,
-          // border: '1px solid black',
-        }}
-      >
-        {/* <span style={{ position: 'absolute' }}>
-          id = {childCell.i}<br/>
-          w = {childCell.w}<br/>
-          cx = {childCell.x + childCell.w}<br/>
-          bx = {childCell.bx}
-        </span> */}
-        {child}
-      </div>
-    );
+    const newChild = React.cloneElement(child, {
+      className: clsx(
+        'rsg-grid-cell',
+        child.props.className
+      ),
+      style: {
+        ...child.props.style,
+        position: 'absolute',
+        top: childCell.y,
+        left: childCell.x,
+        width: childCell.w,
+        height: childCell.h,
+      },
+    });
+
+    // console.log(newChild.props);
+
+    return newChild;
   };
 
   shouldComponentUpdate(nextProps: Required<Props>, nextState: State) {
@@ -315,7 +302,7 @@ class ResizableGrid extends React.Component<Props, State> {
     // to stored references
     if (nextProps.children !== prevState.children) {
       currentState.layout = getLayoutFromChildren(
-        prevState.layout, 
+        prevState.layout,
         nextProps.children
       );
       currentState.children = nextProps.children;
@@ -333,11 +320,27 @@ class ResizableGrid extends React.Component<Props, State> {
     }
 
     if (modified) {
+      currentState.rows = currentState.rows ?? prevState.rows;
+      currentState.cols = currentState.cols ?? prevState.cols;
+      currentState.layout = currentState.layout ?? prevState.layout;
+
       currentState.measuredCells = measureCells(
-        currentState.layout ?? prevState.layout,
-        currentState.rows ?? prevState.rows,
-        currentState.cols ?? prevState.cols,
+        currentState.rows,
+        currentState.cols,
+        currentState.layout,
       );
+
+      // If row- or column count changed, we need to create a new
+      // cell matrix
+      if (nextProps.rows.length !== prevState.rows.length ||
+          nextProps.cols.length !== prevState.cols.length
+      ) {
+        currentState.keyMatrix = createCellMatrix(
+          currentState.rows,
+          currentState.cols,
+          currentState.layout
+        );
+      }
 
       return currentState;
     }
@@ -345,14 +348,14 @@ class ResizableGrid extends React.Component<Props, State> {
   }
 
   getSnapshotBeforeUpdate(prevProps: Required<Props>, prevState: State) {
-    const flags = 0;    
+    const flags = 0;
     // if (this.props.children !== prevProps.children) {
     //   flags |= UPDATED_CHILDREN;
     // }
     // if (this.state.bounds !== prevState.bounds) {
     //   flags |= UPDATED_BOUNDS;
     // }
-    
+
     // if (this.state.externalUpdate) {
     //   if (!isEqual(this.state.rows, this.props.rows)) {
     //     flags |= UPDATED_ROWS;
@@ -394,9 +397,9 @@ class ResizableGrid extends React.Component<Props, State> {
 
     if (flags & needRemeasure) {
       newState.measuredCells = measureCells(
-        newState.layout, 
-        newState.rows, 
-        newState.cols
+        newState.rows,
+        newState.cols,
+        newState.layout,
       );
     }
 

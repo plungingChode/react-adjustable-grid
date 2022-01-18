@@ -96,15 +96,6 @@ export function sum(arr: number[]) {
 
 export type KeyMatrix = TKey[][];
 
-// Creates row major order
-export function createKeyMatrix(n: number, m: number): KeyMatrix {
-  const mx = Array(n);
-  for (let i = 0; i < n; i++) {
-    mx[i] = Array(m).fill(-1);
-  }
-  return mx;
-}
-
 export function cloneKeyMatrix(mx: KeyMatrix): KeyMatrix {
   const n = mx.length;
 
@@ -129,11 +120,39 @@ export function transposeKeyMatrix(mx: KeyMatrix): KeyMatrix {
   }
 
   return tpd;
-  // return mx[0].map((_, i) => mx.map(row => row[i]));
+}
+
+// TODO handle adding/removing layout elements, and fill cells
+// with fake elements
+export function createCellMatrix(
+  rows: number[], 
+  cols: number[], 
+  layout: Layout
+) {
+  // Creates row major order
+  const n = rows.length;
+  const m = cols.length;
+  const matrix = Array(n);
+  for (let i = 0; i < n; i++) {
+    matrix[i] = Array(m).fill(-1);
+  }
+
+  // Mark area locations with department ID
+  for (const cell of layout) {
+    const rowMax = Math.min(cell.y + cell.h - 1, n);
+    const colMax = Math.min(cell.x + cell.w - 1, m);
+
+    for (let y = cell.y - 1; y < rowMax; y++) {
+      for (let x = cell.x - 1; x < colMax; x++) {
+        matrix[y][x] = String(cell.i);
+      }
+    }
+  }
+  return matrix;
 }
 
 
-export function measureCells(layout: Layout, rows: number[], cols: number[]) {
+export function measureCells(rows: number[], cols: number[], layout: Layout) {
   const props: Record<number | string, MeasuredCell> = {};
   for (let i = 0; i < layout.length; i++) {
     const c = layout[i];

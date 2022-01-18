@@ -35,7 +35,7 @@ declare type Props = {
 };
 declare type State = {
     cols: number[];
-    areaMatrix: KeyMatrix;
+    keyMatrix: KeyMatrix;
     rows: number[];
     measuredCells: Record<TKey, MeasuredCell>;
     layout: Layout;
@@ -50,14 +50,13 @@ declare class ResizableGrid extends React.Component<Props, State> {
     state: State;
     constructor(props: Props);
     calculateResizeBoundary: (kind: 'row' | 'col', target: number, handleOffset: number) => number;
-    createCellMatrix: () => KeyMatrix;
     onBeforeColResize: ResizeEventHandler;
     onColResize: ResizeEventHandler;
     onAfterColResize: ResizeEventHandler;
     onBeforeRowResize: ResizeEventHandler;
     onRowResize: ResizeEventHandler;
     onAfterRowResize: ResizeEventHandler;
-    processChild: (child: ReactElement<any>, idx: number) => JSX.Element | null | undefined;
+    processChild: (child: ReactElement<any>, idx: number) => React.ReactElement<any, string | React.JSXElementConstructor<any>> | null | undefined;
     shouldComponentUpdate(nextProps: Required<Props>, nextState: State): boolean;
     static getDerivedStateFromProps(nextProps: Required<Props>, prevState: State): Partial<State> | null;
     getSnapshotBeforeUpdate(prevProps: Required<Props>, prevState: State): number;

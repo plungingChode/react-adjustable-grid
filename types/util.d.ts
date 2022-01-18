@@ -14,7 +14,7 @@ export declare function getLayoutFromChildren(currentLayout: Layout, children: R
  */
 export declare function sum(arr: number[]): number;
 export declare type KeyMatrix = TKey[][];
-export declare function createKeyMatrix(n: number, m: number): KeyMatrix;
 export declare function cloneKeyMatrix(mx: KeyMatrix): KeyMatrix;
 export declare function transposeKeyMatrix(mx: KeyMatrix): KeyMatrix;
-export declare function measureCells(layout: Layout, rows: number[], cols: number[]): Record<string | number, MeasuredCell>;
+export declare function createCellMatrix(rows: number[], cols: number[], layout: Layout): any[];
+export declare function measureCells(rows: number[], cols: number[], layout: Layout): Record<string | number, MeasuredCell>;
