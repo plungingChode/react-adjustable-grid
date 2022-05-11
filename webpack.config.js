@@ -15,6 +15,7 @@ module.exports = {
     filename: '[name].js',
     libraryTarget: 'umd',
     library: 'ReactAdjustableGrid',
+    globalObject: 'this'
   },
   module: {
     rules: [

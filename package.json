@@ -29,14 +29,13 @@
   },
   "homepage": "https://github.com/plungingChode/react-adjustable-grid#readme",
   "peerDependencies": {
-    "react": ">= 17.0.2",
-    "react-dom": ">= 17.0.2",
-    "react-draggable": ">= 4.4.4"
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-draggable": "^4.4.5"
   },
   "dependencies": {
     "clsx": "^1.1.1",
-    "fast-deep-equal": "^3.1.3",
-    "html-webpack-plugin": "^5.5.0"
+    "fast-deep-equal": "^3.1.3"
   },
   "devDependencies": {
     "@babel/core": "^7.16.7",
@@ -55,6 +54,7 @@
     "babel-loader": "^8.2.3",
     "eslint": "^8.7.0",
     "eslint-plugin-react": "^7.28.0",
+    "html-webpack-plugin": "^5.5.0",
     "react-refresh": "^0.11.0",
     "ts-loader": "^9.2.6",
     "typescript": "^4.5.4",
